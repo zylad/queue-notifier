@@ -83,7 +83,6 @@ rescue Timeout::Error
   exit 4
 rescue Interrupt
   puts "\nExiting.."
-  consumer.unsubscribe(queue)
   QueueNotifier.send_back(msg_cache, queue, consumer)
   exit 5
 end
