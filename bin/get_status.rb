@@ -3,6 +3,7 @@
 $LOAD_PATH << File.expand_path(File.dirname(__FILE__) + '/../')
 
 require 'pp'
+require 'rubygems'
 require 'optparse'
 require 'timeout'
 require 'stomp'
