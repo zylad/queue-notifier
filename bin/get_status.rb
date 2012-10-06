@@ -8,6 +8,7 @@ require 'optparse'
 require 'timeout'
 require 'stomp'
 require 'json'
+require 'logger'
 require 'lib/config'
 require 'lib/helpers'
 
@@ -21,11 +22,14 @@ opts = OptionParser.new do |opts|
   opts.on('-u', '--uuid UUID', 'UUID of monitored command. Will be pushed back into the queue') do |v|
     options[:uuid] = v.to_s
   end
-  opts.on('-t', '--timeout SEC' 'how many SECs to wait until exit with no data pulled from queue') do |v|
+  opts.on('-t', '--timeout SEC', 'how many SECs to wait until exit with no data pulled from queue') do |v|
     options[:timeout] = v.to_s
   end
   opts.on('-a', '--all', 'pulls *all* messages from queue and sends them back to the queue after timeout or interrupt.') do |v|
     options[:all] = v.to_s
+  end
+  opts.on('-s', '--stream', 'reads all messages from given queue') do |v|
+    options[:stream] = v.to_s
   end
 end
 
@@ -39,7 +43,7 @@ rescue OptionParser::MissingArgument
   exit 2
 end
 
-if options[:uuid].nil? && options[:all].nil?
+if options[:uuid].nil? && options[:all].nil? && options[:stream].nil?
   puts opts
   exit 3
 end
@@ -53,6 +57,7 @@ password  = conf.password
 host      = conf.host
 consumer  = Stomp::Connection.new(username, password, host, 6163, true)
 msg_cache = Array.new
+log       = Logger.new(STDOUT) if options[:stream]
 
 consumer.subscribe(queue)
 
@@ -63,6 +68,9 @@ begin
         msg  = consumer.receive
         msg_cache << msg
         pp msg
+      elsif options[:stream]
+        msg  = consumer.receive
+        log.info("received: #{msg.body}")
       else
         msg  = consumer.receive
         body = JSON.parse(msg.body)
